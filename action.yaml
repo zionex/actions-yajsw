@@ -1,0 +1,30 @@
+name: 'GitHub Action for Yet Another Java Service Wrapper'
+description: 'This is a GitHub Action for wrapping with yajsw.'
+
+branding:
+  icon: server
+  color: 'blue'
+
+inputs:
+  dist-path:
+    description: 'The distribution path of yajsw'
+    required: false
+  service-name:
+    description: 'The service name of yajsw'
+    required: true
+  java-app-main-class:
+    description: 'Java Application main class'
+    required: false
+  java-app-jar-file:
+    description: 'Java Application jar file'
+    required: false
+  java-vm-options:
+    description: 'Java VM Options'
+    required: false
+  java-max-memory:
+    description: 'Java Maximum Heap Size'
+    required: false
+    default: '8192'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
