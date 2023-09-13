@@ -11,18 +11,20 @@ type FileReplaceInfo = {[key: string]: {[key: string]: string}};
   try {
     const workingDir: string = process.cwd();
 
+    const repoInfo: string[] = process.env.GITHUB_REPOSITORY!.split('/');
+    const owner: string = repoInfo[0];
+    const repo: string = repoInfo[1];
+
     let srcPath: string = path.join(workingDir, 'yajsw');
 
-    if (!fs.existsSync(srcPath)) {
-      const yajswUrl: string = `https://github.com/meta205/actions-yajsw/releases/download/v1/yajsw.zip`;
-      const yajswFile: string = await tc.downloadTool(yajswUrl);
-      const yajswDir: string = await tc.extractZip(
-          yajswFile,
-          srcPath
-      );
+    const yajswUrl: string = `https://github.com/${owner}/${repo}/releases/download/v1/yajsw.zip`;
+    const yajswFile: string = await tc.downloadTool(yajswUrl);
+    const yajswDir: string = await tc.extractZip(
+        yajswFile,
+        srcPath
+    );
 
-      console.log(`The download path of yajsw: ${yajswDir}`);
-    }
+    console.log(`The download path of yajsw: ${yajswDir}`);
 
     let distPath: string = core.getInput('dist-path');
     if (!distPath) {
@@ -185,8 +187,8 @@ type FileReplaceInfo = {[key: string]: {[key: string]: string}};
 
     if (mainClass) {
       newData = newData.replace(/wrapper.java.app.mainclass=/g, 'wrapper.java.app.mainclass=' + mainClass);
-      newData = newData.replace(/#wrapper.java.classpath.1=/g, 'wrapper.java.classpath.1=${wrapper_home}/../lib/*.jar' + mainClass);
-      newData = newData.replace(/# wrapper.java.library.path.1=..\/lib/g, 'wrapper.java.library.path.1=${wrapper_home}/../lib' + mainClass);
+      newData = newData.replace(/#wrapper.java.classpath.1=/g, 'wrapper.java.classpath.1=${wrapper_home}/../lib/*.jar');
+      newData = newData.replace(/# wrapper.java.library.path.1=..\/lib/g, 'wrapper.java.library.path.1=${wrapper_home}/../lib');
     } else if (jarFile) {
       newData = newData.replace(/wrapper.java.app.mainclass=/g, '#wrapper.java.app.mainclass=');
       newData = newData.replace(/#wrapper.java.app.jar=/g, 'wrapper.java.app.jar=${wrapper_home}/../' + jarFile);

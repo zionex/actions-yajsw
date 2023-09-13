@@ -16,8 +16,8 @@ jobs:
           zip -r ../yajsw.zip *
       - name: Get release info
         run: |
-          echo "tag-name=v$(cat package.json | jq '.version|split(".")[0]|tonumber')" >> $GITHUB_OUTPUT
-          echo "release-name=v$(cat package.json | jq '.version|split(".")[0]|tonumber')" >> $GITHUB_OUTPUT
+          echo "tag-name=v$(cat package.json | jq '.version | sub(".0"; "") | sub(".0"; "") | tonumber')" >> $GITHUB_OUTPUT
+          echo "release-name=v$(cat package.json | jq '.version | sub(".0"; "") | sub(".0"; "") | tonumber')" >> $GITHUB_OUTPUT
         id: release-info
       - name: Create release
         uses: actions/create-release@v1
