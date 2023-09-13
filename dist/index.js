@@ -9372,7 +9372,7 @@ const tc = __importStar(__nccwpck_require__(9968));
     try {
         const workingDir = process.cwd();
         const srcPath = path.join(workingDir, 'yajsw');
-        const yajswUrl = 'https://github.com/zionex/actions-yajsw/releases/download/v1/yajsw.zip';
+        const yajswUrl = 'https://github.com/zionex/actions-yajsw/releases/download/v2/yajsw.zip';
         console.log('Downloading yajsw...');
         console.log(`    URL: ${yajswUrl}`);
         const yajswFile = yield tc.downloadTool(yajswUrl);
@@ -9391,6 +9391,7 @@ const tc = __importStar(__nccwpck_require__(9968));
         fs_extra_1.default.copySync(path.join(srcPath, 'templates'), path.join(distPath, 'wrapper', 'templates'), { overwrite: true });
         fs_extra_1.default.copySync(path.join(srcPath, 'wrapper.jar'), path.join(distPath, 'wrapper', 'wrapper.jar'), { overwrite: true });
         fs_extra_1.default.copySync(path.join(srcPath, 'wrapperApp.jar'), path.join(distPath, 'wrapper', 'wrapperApp.jar'), { overwrite: true });
+        fs_extra_1.default.copySync(path.join(srcPath, 'wrapperApp9.jar'), path.join(distPath, 'wrapper', 'wrapperApp9.jar'), { overwrite: true });
         fs_extra_1.default.copySync(path.join(srcPath, 'yajsw.policy.txt'), path.join(distPath, 'wrapper', 'yajsw.policy.txt'), { overwrite: true });
         console.log('Change the file name...');
         const renameFileDict = {
