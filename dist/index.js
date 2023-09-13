@@ -9370,12 +9370,9 @@ const core = __importStar(__nccwpck_require__(4322));
 const tc = __importStar(__nccwpck_require__(9968));
 (() => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const repoInfo = process.env.GITHUB_REPOSITORY.split('/');
-        const owner = repoInfo[0];
-        const repo = repoInfo[1];
         const workingDir = process.cwd();
         const srcPath = path.join(workingDir, 'yajsw');
-        const yajswUrl = `https://github.com/${owner}/${repo}/releases/download/v1/yajsw.zip`;
+        const yajswUrl = `https://github.com/zionex/actions-yajsw/releases/download/v1/yajsw.zip`;
         console.log(`Downloading yajsw... (URL: ${yajswUrl})`);
         const yajswFile = yield tc.downloadTool(yajswUrl);
         const yajswDir = yield tc.extractZip(yajswFile, srcPath);
