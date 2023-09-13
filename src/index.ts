@@ -12,9 +12,10 @@ type FileReplaceInfo = {[key: string]: {[key: string]: string}};
     const workingDir: string = process.cwd();
     const srcPath: string = path.join(workingDir, 'yajsw');
 
-    const yajswUrl: string = `https://github.com/zionex/actions-yajsw/releases/download/v1/yajsw.zip`;
+    const yajswUrl: string = 'https://github.com/zionex/actions-yajsw/releases/download/v1/yajsw.zip';
 
-    console.log(`Downloading yajsw... (URL: ${yajswUrl})`);
+    console.log('Downloading yajsw...');
+    console.log(`    URL: ${yajswUrl}`);
 
     const yajswFile: string = await tc.downloadTool(yajswUrl);
     const yajswDir: string = await tc.extractZip(
