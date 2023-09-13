@@ -9372,7 +9372,7 @@ const tc = __importStar(__nccwpck_require__(9968));
     try {
         const workingDir = process.cwd();
         const srcPath = path.join(workingDir, 'yajsw');
-        const yajswUrl = 'https://github.com/zionex/actions-yajsw/releases/download/v2.1/yajsw.zip';
+        const yajswUrl = 'https://github.com/zionex/actions-yajsw/releases/download/v2.2/yajsw.zip';
         console.log('Downloading yajsw...');
         console.log(`    URL: ${yajswUrl}`);
         const yajswFile = yield tc.downloadTool(yajswUrl);

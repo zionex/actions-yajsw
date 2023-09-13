@@ -1,6 +1,6 @@
 {
   "name": "actions-yajsw",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "GitHub Action for yajsw",
   "main": "index.js",
   "scripts": {
