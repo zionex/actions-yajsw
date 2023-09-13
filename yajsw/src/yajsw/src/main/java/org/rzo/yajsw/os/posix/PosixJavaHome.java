@@ -15,13 +15,14 @@
  *******************************************************************************/
 package org.rzo.yajsw.os.posix;
 
-import io.netty.util.internal.logging.InternalLogger;
-
 import java.io.File;
 
 import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.CompositeConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.rzo.yajsw.os.JavaHome;
+
+import io.netty.util.internal.logging.InternalLogger;
 
 public class PosixJavaHome implements JavaHome
 {
@@ -87,10 +88,12 @@ public class PosixJavaHome implements JavaHome
 				if (javaFiles[idx] != null)
 				{
 					javaName = ((loop == 0) ? javaFiles[idx] : System
-							.getProperty("JAVA_HOME", "")
+							.getProperty("java.home", "")
 							+ File.separator
 							+ "bin" + File.separator + javaFiles[idx]);
 					File fJavaTmp = new File(javaName);
+					//System.out.println(fJavaTmp + "exists "+fJavaTmp.exists());
+					//System.out.println(fJavaTmp + "canExecute "+fJavaTmp.canExecute());
 					if (fJavaTmp.exists() && fJavaTmp.canExecute())
 					{
 						fJava = fJavaTmp;
@@ -103,6 +106,7 @@ public class PosixJavaHome implements JavaHome
 		// if Regular java not found.... Search Path for JAVA's HOME
 		if (fJava == null)
 		{
+			System.out.println("regular not found");
 			// Check path for JAVA's HOME
 			String home = findJavaHomeFromPath(null);
 			if (home != null)
@@ -111,6 +115,8 @@ public class PosixJavaHome implements JavaHome
 				javaName = home + File.separator + "bin" + File.separator
 						+ "java";
 				File fJavaTmp = new File(javaName);
+				//System.out.println(fJavaTmp + "exists "+fJavaTmp.exists());
+				//System.out.println(fJavaTmp + "canExecute "+fJavaTmp.canExecute());
 				if (fJavaTmp.exists() && fJavaTmp.canExecute())
 				{
 					fJava = fJavaTmp;
@@ -121,12 +127,13 @@ public class PosixJavaHome implements JavaHome
 		// if Regular java still not found.... bummer were done
 		if (fJava != null)
 		{
+			//System.out.println("final regular not found");
 			java = fJava.getAbsolutePath();
 
 			// Posix Version does not use wrapper.java.command like Win version
 			// does. Update both
-			_config.setProperty("wrapper.java.command", java);
-			_config.setProperty("wrapper.ntservice.java.command", java);
+			((CompositeConfiguration)_config).getConfiguration(0).setProperty("wrapper.java.command", java);
+			((CompositeConfiguration)_config).getConfiguration(0).setProperty("wrapper.ntservice.java.command", java);
 		}
 
 		if (java == null)

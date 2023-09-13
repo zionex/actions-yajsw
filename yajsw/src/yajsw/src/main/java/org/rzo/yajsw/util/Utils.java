@@ -18,18 +18,16 @@ package org.rzo.yajsw.util;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.Configuration;
 import org.rzo.yajsw.wrapper.WrappedProcess;
 import org.rzo.yajsw.wrapper.WrappedService;
 
 import com.sun.jna.PlatformEx;
-
-import sun.net.InetAddressCachePolicy;
 
 public class Utils
 {
@@ -44,6 +42,19 @@ public class Utils
 	public Utils(WrappedService service)
 	{
 		_service = service;
+	}
+	
+	public static Configuration toBaseConfiguration(Configuration conf, boolean toLowerCase)
+	{
+		Configuration result = new BaseConfiguration();
+		if (conf != null && conf.size() > 0)
+		for (Iterator<String> it=conf.getKeys(); it.hasNext(); )
+		{
+			String key = it.next();
+			String keyl = toLowerCase ? key.toLowerCase() : key;
+			result.addProperty(keyl, conf.getProperty(key));
+		}
+		return result;
 	}
 
 	public String inquireCLI(String message) throws IOException
@@ -93,6 +104,15 @@ public class Utils
 				System.out
 						.println("!! WARNING !! Windows JDK7 should set -Djava.net.preferIPv4Stack=true (see java bug 7179799 )");
 		}
+	}
+	
+	public static boolean requiredRTjar()
+	{
+		String jvm = System.getProperty("java.version");
+		if (jvm.startsWith("1."))
+			return true;
+		return false;
+		
 	}
 
 	public static String getDOption(String key, String value)

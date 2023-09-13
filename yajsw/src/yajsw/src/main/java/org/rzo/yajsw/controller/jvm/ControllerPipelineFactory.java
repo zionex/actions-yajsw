@@ -15,15 +15,11 @@
  *******************************************************************************/
 package org.rzo.yajsw.controller.jvm;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
-
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 
 import org.rzo.yajsw.Constants;
 import org.rzo.yajsw.controller.Message;
@@ -32,6 +28,13 @@ import org.rzo.yajsw.nettyutils.Condition;
 import org.rzo.yajsw.nettyutils.ConditionFilter;
 import org.rzo.yajsw.nettyutils.LoggingFilter;
 import org.rzo.yajsw.nettyutils.WhitelistFilter;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.Delimiters;
 
 class ControllerPipelineFactory extends ChannelInitializer<SocketChannel>
 {
@@ -85,6 +88,8 @@ class ControllerPipelineFactory extends ChannelInitializer<SocketChannel>
 
 		// create a firewall allowing only localhosts to connect
 		WhitelistFilter firewall = new WhitelistFilter();
+		
+		/*
 		try
 		{
 			firewall.allowAll(InetAddress.getAllByName("127.0.0.1"));
@@ -101,6 +106,69 @@ class ControllerPipelineFactory extends ChannelInitializer<SocketChannel>
 		{
 			_controller.getLog().warning("error getting localhost by name: "+e.getMessage());
 		}
+		*/
+		
+        boolean ipAdded = false;
+        try {
+
+            InetAddress localhost = InetAddress.getLocalHost();
+            firewall.allow(localhost);
+            ipAdded = true;
+            if (_debug){
+                _controller.getLog().info("Added localhost IP addr: " + localhost + " - " + localhost.getHostAddress());
+            }
+
+            //Just in case this host has multiple IP addresses....
+            InetAddress[] allIpsForCanonicalHostName = InetAddress.getAllByName(localhost.getCanonicalHostName());
+            if (allIpsForCanonicalHostName != null && allIpsForCanonicalHostName.length > 1) {
+                if (_debug){
+                    _controller.getLog().info("Found multiple network internet addresses for canonical host name:");
+                }
+                for (int i = 0; i < allIpsForCanonicalHostName.length; i++) {
+                    InetAddress currentAddress = allIpsForCanonicalHostName[i];
+                    if (_debug){
+                        _controller.getLog().info("   Added InetAddress " + currentAddress);
+                    }
+                    firewall.allow(currentAddress);
+                    ipAdded = true;
+                }
+            }
+        } catch (UnknownHostException e) {
+            _controller.getLog().throwing(JVMController.class.getName(), "start", e);
+        }
+
+
+        try {
+
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface currentInterface = en.nextElement();
+
+                if (_debug){
+                    _controller.getLog().info("Adding local IPs for interface " + currentInterface.getName() + " - " + currentInterface.getDisplayName());
+                }
+                for (Enumeration<InetAddress> enumIpAddr = currentInterface.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress currentAddress = enumIpAddr.nextElement();
+                    if (_debug){
+                        _controller.getLog().info("   Added InetAddress " + currentAddress.toString());
+                    }
+                    firewall.allow(currentAddress);
+                    ipAdded = true;
+                }
+            }
+        } catch (SocketException e) {
+            _controller.getLog().throwing(JVMController.class.getName(), "start", e);
+        }
+
+        if(!ipAdded){
+            _controller.getLog().info("No IP added to whitelist. Defaulting to allow 127.0.0.1 and 127.0.1.1 .");
+            byte[] addressBytes;
+
+            addressBytes = new byte[] { 127, 0, 0, 1 };
+            firewall.allow(InetAddress.getByAddress("localhost", addressBytes));
+
+            addressBytes = new byte[] { 127, 0, 1, 1 };
+            firewall.allow(InetAddress.getByAddress("localhost", addressBytes));
+        }
 
 		pipeline.addLast("firewall", firewall);
 

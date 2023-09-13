@@ -16,25 +16,6 @@
 
 package org.rzo.yajsw.app;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.oio.OioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.channel.socket.oio.OioSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
-import io.netty.util.concurrent.Future;
-import io.netty.util.internal.logging.InternalLogger;
-import io.netty.util.internal.logging.SimpleLoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,9 +37,11 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -96,6 +79,23 @@ import org.rzo.yajsw.util.Utils;
 import org.rzo.yajsw.wrapper.AlphaNumericComparator;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.oio.OioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.oio.OioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.Delimiters;
+import io.netty.util.concurrent.Future;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.SimpleLoggerFactory;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -145,6 +145,9 @@ public class WrapperManagerImpl implements WrapperManager, Constants,
 
 	/** The main method. */
 	Method mainMethod = null;
+	String mainClassName = null;
+	String module = null;
+	List<String> modulePath = null;
 
 	/** The main method args. */
 	String[] mainMethodArgs = null;
@@ -215,6 +218,8 @@ public class WrapperManagerImpl implements WrapperManager, Constants,
 	volatile Runnable _shutdownListener;
 	
 	volatile long _pingTime = System.currentTimeMillis();
+
+	BlockingQueue<String> _keystoreResult = new ArrayBlockingQueue(1);
 	
 	private boolean _wrapperPingCheckAck = false;
 
@@ -308,28 +313,39 @@ public class WrapperManagerImpl implements WrapperManager, Constants,
 		}
 		try
 		{
-			String mainClassName = config
+			mainClassName = config
 					.getString("wrapper.java.app.mainclass");
 			String jarName = config.getString("wrapper.java.app.jar");
+			Configuration mp = config.subset("wrapper.java.app.module-path");
+			if (mp != null && !mp.isEmpty())
+			{
+				modulePath = new ArrayList<String>();
+				Iterator<String> it = mp.getKeys();
+				for (;it.hasNext();)
+				{
+					modulePath.add(mp.getString(it.next()));
+				}
+			}
+			module = config.getString("wrapper.java.app.module", null);
 			String groovyScript = config.getString("wrapper.groovy");
 			if (mainClassName == null && jarName == null
-					&& groovyScript == null)
+					&& groovyScript == null && module == null)
 				mainClassName = config.getString("wrapper.app.parameter.1");
 			if (_debug > 1)
-				System.out.println("mainClass/jar/script: " + mainClassName
-						+ "/" + jarName + "/" + groovyScript);
+				System.out.println("mainClass/jar/script/module: " + mainClassName
+						+ "/" + jarName + "/" + groovyScript+"/"+module);
 			if (jarName == null && mainClassName == null
-					&& groovyScript == null)
+					&& groovyScript == null && module == null)
 			{
 				System.out
-						.println("missing main class name or jar file or groovy file. please check configuration");
+						.println("missing main class name or jar file or groovy file or module. please check configuration");
 				return;
 			}
-			if (jarName != null)
+			if (jarName != null && module == null)
 			{
 				mainMethod = loadJar(jarName);
 			}
-			else if (mainClassName != null)
+			else if (mainClassName != null && module == null)
 				try
 				{
 					Class cls = ClassLoader.getSystemClassLoader().loadClass(
@@ -787,6 +803,21 @@ public class WrapperManagerImpl implements WrapperManager, Constants,
 	public Method getMainMethod()
 	{
 		return mainMethod;
+	}
+	
+	public String getMainClassName() 
+	{
+		return mainClassName;
+	}
+	
+	public String getModule()
+	{
+		return module;
+	}
+	
+	public List<String> getModulePath()
+	{
+		return modulePath;
 	}
 
 	/*
@@ -1462,6 +1493,11 @@ public class WrapperManagerImpl implements WrapperManager, Constants,
 			{
 				_pingTime = System.currentTimeMillis();
 			}
+			else if (msg.getCode() == Constants.WRAPPER_MSG_KEYSTORE_RESULT)
+			{
+				System.out.println("received keystore value");
+				_keystoreResult.add(msg.getMessage());
+			}
 		}
 
 		@Override
@@ -1943,6 +1979,30 @@ public class WrapperManagerImpl implements WrapperManager, Constants,
 			_session.close();
 			_session = null;
 		}
+
+	}
+	
+	public String keystore(String key) throws InterruptedException
+	{
+		String result = null;
+		System.out.println("get keystore for "+key);
+		int i = 0;
+		while (_session == null && !_stopping && i++ < 10)
+			Thread.sleep(1000);
+		if (_session != null && !_stopping)
+		try
+		{
+			_session.writeAndFlush(new Message(Constants.WRAPPER_MSG_KEYSTORE,
+					key));
+			result = _keystoreResult.poll(5000, TimeUnit.MILLISECONDS);			
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		else
+			System.out.println("no session");
+		return result;
 
 	}
 

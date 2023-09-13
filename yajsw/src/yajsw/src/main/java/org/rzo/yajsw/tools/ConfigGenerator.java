@@ -19,7 +19,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.rzo.yajsw.config.FilePropertiesConfiguration;
 import org.rzo.yajsw.os.OperatingSystem;
 import org.rzo.yajsw.os.Process;
@@ -130,7 +129,7 @@ public class ConfigGenerator
 		 * monitoredhost.getMonitoredVm(vmidentifier, 0); return monitoredvm !=
 		 * null; } catch (Exception e) { // e.printStackTrace(); } return false;
 		 */
-		return p.getCommand().contains("java");
+		return p.getCommand().toLowerCase().contains("java");
 	}
 
 	private static void createImageConfigFile(Process p, File input, File output)
@@ -176,7 +175,9 @@ public class ConfigGenerator
 			if (parsedCmd.getMainClass() != null)
 				conf.setProperty("wrapper.java.app.mainclass",
 						parsedCmd.getMainClass());
-			else
+			if (parsedCmd.getModule() != null)
+				conf.setProperty("wrapper.java.app.module", parsedCmd.getModule());
+			if (parsedCmd.getJar() != null)
 				conf.setProperty("wrapper.java.app.jar",
 						relativeString(parsedCmd.getJar(), workingDir));
 
@@ -201,13 +202,14 @@ public class ConfigGenerator
 			 */
 			int i = 1;
 			List<String> classpathList = parsedCmd.getClasspath();
+			List<String> moduleList = parsedCmd.getModuelPath();
 			// no longer required - wrapper will automatically add the jar to
 			// the classpath
 			// if (conf.getString("wrapper.java.app.jar", null) != null)
 			// classpathList.add(conf.getString("wrapper.java.app.jar"));
 			if (classpathList == null || classpathList.isEmpty())
 				classpathList = getClasspathFromEnvironment(p);
-			if (classpathList.isEmpty() && parsedCmd.getJar() == null)
+			if (classpathList.isEmpty() && parsedCmd.getJar() == null && moduleList == null)
 				classpathList.add(".");
 			for (String classpath : classpathList)
 			{
@@ -217,6 +219,14 @@ public class ConfigGenerator
 				if (classpath.endsWith("*"))
 					classpath = classpath + ".jar";
 				conf.setProperty("wrapper.java.classpath." + i++, classpath);
+			}
+
+			if (moduleList != null &&  !moduleList.isEmpty())
+			for (String module : moduleList)
+			{
+				module = relativeString(module, workingDir);
+				module = confString(module);
+				conf.setProperty("wrapper.java.app.module-path." + i++, module);
 			}
 
 			/*

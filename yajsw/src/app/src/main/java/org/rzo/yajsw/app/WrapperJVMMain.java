@@ -19,6 +19,8 @@ package org.rzo.yajsw.app;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
+import com.nqzero.permit.Permit;
+
 // TODO: Auto-generated Javadoc
 /**
  * The Class WrapperMain.
@@ -38,6 +40,7 @@ public class WrapperJVMMain extends AbstractWrapperJVMMain
 	 */
 	public static void main(String[] args) throws IOException
 	{
+		//Permit.godMode();
 		preExecute(args);
 
 		executeMain();
@@ -57,6 +60,7 @@ public class WrapperJVMMain extends AbstractWrapperJVMMain
 		Object[] mainMethodArgs = WRAPPER_MANAGER.getMainMethodArgs();
 		try
 		{
+			Permit.setAccessible(mainMethod);
 			mainMethod.invoke(null, new Object[] { mainMethodArgs });
 			WRAPPER_MANAGER.warn("main method terminated");
 		}

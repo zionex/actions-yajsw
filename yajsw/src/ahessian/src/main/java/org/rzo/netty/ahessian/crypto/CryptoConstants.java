@@ -22,7 +22,7 @@ public interface CryptoConstants
 	public static String SYM_KEY_TYPE = "RC4";// "Salsa20";//"RC4";//
 	// if lower than 512 java throws an exception
 	// size in bits
-	public static int ASYM_KEY_SIZE = 512;
+	public static int ASYM_KEY_SIZE = 1024;
 	// size in bytes
 	public static int SYM_KEY_SIZE = 16;
 	// only required for salsa20, must be 8 byte

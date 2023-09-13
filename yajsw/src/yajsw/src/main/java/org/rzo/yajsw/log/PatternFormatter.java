@@ -190,7 +190,7 @@ public class PatternFormatter extends Formatter
 			Object[] log = { record.getLoggerName(), record.getLevel(),
 					formattedTime, record.getMessage(),
 					record.getSourceClassName(), record.getSourceMethodName(),
-					record.getThrown().getMessage(), stack };
+					record.getThrown().toString(), stack };
 
 			logMessage = exceptionMessageFormat.format(log);
 		}

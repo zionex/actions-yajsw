@@ -186,7 +186,8 @@ public class DateFileHandler extends Handler
 		_startDate = System.currentTimeMillis();
 		if (_handler != null)
 			_handler.close();
-		_previousDates.addLast(_currentDate);
+		if (_currentDate != null)
+			_previousDates.addLast(_currentDate);
 		cleanupDates();
 		_currentDate = format.format(new Date());
 		String pattern = _pattern.replace("%d", _currentDate);

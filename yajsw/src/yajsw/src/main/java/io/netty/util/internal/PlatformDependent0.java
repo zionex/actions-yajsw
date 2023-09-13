@@ -33,7 +33,7 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 /**
  * The {@link PlatformDependent} operations which requires access to {@code sun.misc.*}.
  */
-final class PlatformDependent0 {
+ final class PlatformDependent0 {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PlatformDependent0.class);
     private static final long ADDRESS_FIELD_OFFSET;

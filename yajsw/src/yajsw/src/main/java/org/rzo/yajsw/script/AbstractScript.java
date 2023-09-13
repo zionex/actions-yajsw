@@ -16,21 +16,24 @@
 
 package org.rzo.yajsw.script;
 
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timeout;
-import io.netty.util.Timer;
-import io.netty.util.TimerTask;
-
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.rzo.yajsw.util.DaemonThreadFactory;
 import org.rzo.yajsw.wrapper.WrappedProcess;
+
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.Timer;
+import io.netty.util.TimerTask;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -56,7 +59,7 @@ public abstract class AbstractScript implements Script
 			0, 50, 120L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
 			new DaemonThreadFactory("scriptExecutorInternal"));
 	volatile Future _future;
-	volatile Timeout _timerTimeout;
+	volatile AtomicReference<Timeout> _timerTimeout = new AtomicReference<Timeout>();
 
 	AtomicInteger _remainingConcInvocations;
 
@@ -91,6 +94,16 @@ public abstract class AbstractScript implements Script
 	public abstract void interrupt();
 
 	abstract void log(String msg);
+	
+	public Object execute()
+	{
+		return execute("");
+	}
+
+	public void executeWithTimeout()
+	{
+		 executeWithTimeout("");
+	}
 
 	synchronized public void executeWithTimeout(final String line)
 	{
@@ -101,7 +114,9 @@ public abstract class AbstractScript implements Script
 			return;
 		}
 		Object result = null;
-		_timerTimeout = TIMER.newTimeout(new TimerTask()
+		log("executeWithTimeout script: " + _name);
+
+		Timeout timerTimeout = TIMER.newTimeout(new TimerTask()
 		{
 
 			public void run(Timeout arg0) throws Exception
@@ -118,21 +133,36 @@ public abstract class AbstractScript implements Script
 			}
 
 		}, _timeout, TimeUnit.MILLISECONDS);
+		_timerTimeout.set(timerTimeout);
 		_future = EXECUTOR.submit(new Callable<Object>()
 		{
 			public Object call()
 			{
+				log("executing script: " + _name);
 				Object result = execute(line);
-				if (_timerTimeout != null)
-					_timerTimeout.cancel();
-				_timerTimeout = null;
+				if (_timerTimeout.get() != null)
+					_timerTimeout.get().cancel();
+				_timerTimeout.set(null);
 				_remainingConcInvocations.incrementAndGet();
 				log("executed script: " + _name + " "
-						+ _remainingConcInvocations);
+						+ result);
 				return result;
 			}
 		});
 		Thread.yield();
+		try {
+			 result = _future.get(_timeout, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TimeoutException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		log("script done: "+result);
 	}
 
 	private boolean checkRemainConc()

@@ -29,10 +29,13 @@ import org.rzo.yajsw.io.CyclicBufferFilePrintStream;
 import org.rzo.yajsw.os.OperatingSystem;
 import org.rzo.yajsw.os.Process;
 import org.rzo.yajsw.os.posix.PosixProcess;
+import org.rzo.yajsw.os.posix.PosixProcess.CLibrary;
 
 import com.sun.jna.FromNativeConverter;
-import com.sun.jna.ptr.IntByReference;
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
 import com.sun.jna.ptr.LongByReference;
+import com.sun.jna.ptr.PointerByReference;
 
 public class BSDProcess extends PosixProcess
 {
@@ -218,15 +221,8 @@ public class BSDProcess extends PosixProcess
 			_errorStream = _process.getErrorStream();
 
 		}
-		if (_cpuAffinity != AFFINITY_UNDEFINED)
-		{
-			LongByReference affinity = new LongByReference();
-			affinity.setValue(_cpuAffinity);
-			if (CLibrary.INSTANCE.sched_setaffinity(_pid, 4, affinity) == -1)
-				System.out.println("error setting affinity");
-		}
-
-		System.out.println("started process " + _pid);
+		handleAffinity();
+		//System.out.println("started process " + _pid);
 
 		return true;
 	}

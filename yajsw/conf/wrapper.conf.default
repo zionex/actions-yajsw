@@ -192,11 +192,31 @@ wrapper.ntservice.description=yajsw
 #********************************************************************
 # Wrapper Posix Daemon Properties
 #********************************************************************
-# Directory in which to create and execute daemon init scripts. Default: /etc/init.d
-#wrapper.daemon.dir = 
-
 # Directory where to store the wrapper pid file. Default: /var/run
 #wrapper.daemon.pid.dir = 
+
+# per default yajsw checks if sytemd is available and will install using systemctl
+# if it is not available it will install for initd
+# with the following property one can force it to use initd or systemd
+# wrapper.daemon.system = initd
+
+# systemd dependencies are set using the properties wrapper.ntservice.dependency.<n>
+# network.target is added by default
+# if the property value does not contain a "." yajsw will concat ".service"
+
+#********************************************************************
+# Wrapper Posix systemd specifc Properties
+#********************************************************************
+# Directory in which to create the service configuration. Default: /etc/systemd/system
+#wrapper.daemon.dir = 
+
+
+
+#********************************************************************
+# Wrapper Posix Daemon initd specific Properties
+#********************************************************************
+# Directory in which to create and execute daemon init scripts. Default: /etc/init.d
+#wrapper.daemon.dir = 
 
 # Directory in which to create K... and S... links. 
 # Default: <wrapper.daemon.dir>/rcX.d
@@ -208,6 +228,7 @@ wrapper.daemon.run_level_dir=${if (new File('/etc/rc0.d').exists()) return '/etc
 # Similar syntax as the update_rc.d command
 # Default: equivalent to default of update_rc.d
 #wrapper.daemon.update_rc = start 20 2 3 4 . start 30 5 . stop 80 0 1 6
+
 
 #********************************************************************
 # Wrapper System Tray Properties

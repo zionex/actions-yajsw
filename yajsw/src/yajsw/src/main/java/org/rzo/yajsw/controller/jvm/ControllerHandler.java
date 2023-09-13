@@ -15,15 +15,17 @@
  *******************************************************************************/
 package org.rzo.yajsw.controller.jvm;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.configuration2.interpol.ConfigurationInterpolator;
 import org.rzo.yajsw.Constants;
+import org.rzo.yajsw.config.VarInterpolator;
 import org.rzo.yajsw.controller.Message;
 import org.rzo.yajsw.util.DaemonThreadFactory;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 public class ControllerHandler extends ChannelInboundHandlerAdapter implements
 		Constants
@@ -133,6 +135,16 @@ public class ControllerHandler extends ChannelInboundHandlerAdapter implements
 
 		case Constants.WRAPPER_MSG_SERVICE_STARTUP:
 			_controller.serviceStartup();
+			break;
+
+		case Constants.WRAPPER_MSG_KEYSTORE:
+			String key = message.getMessage();
+			_controller.getLog().info("getting keystore for "+key);
+			String result = null;
+			ConfigurationInterpolator interpolator = _controller._wrappedProcess.getYajswConfig().getInterpolator();
+			if (interpolator instanceof VarInterpolator)
+				result = ((VarInterpolator) interpolator).getFromKeystore(key);
+			ctx.writeAndFlush(new Message(Constants.WRAPPER_MSG_KEYSTORE_RESULT, result));
 			break;
 
 		case Constants.WRAPPER_MSG_STOP_PENDING:

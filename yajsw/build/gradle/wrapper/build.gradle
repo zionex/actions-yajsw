@@ -22,13 +22,19 @@ dependencies {
     compile group: 'groovy', 					name: 'groovy', 							version: "$groovy_version"
     compile group: 'jna', 								name: 'jna', 											version: "$jna_version"
     compile group: 'jna', 								name: 'jna-platform', 						version: "$platform_version"
-    compile group: 'netty', 							name: 'netty', 										version: "$netty_version"
+    compile group: 'netty', 							name: 'netty-codec', 										version: "$netty_version"
+    compile group: 'netty', 							name: 'netty-handler', 										version: "$netty_version"
+    compile group: 'netty', 							name: 'netty-transport', 										version: "$netty_version"
+    compile group: 'netty', 							name: 'netty-buffer', 										version: "$netty_version"
+    compile group: 'netty', 							name: 'netty-common', 										version: "$netty_version"
     compile group: 'automaton', 					name: 'automaton', 								version: "$automaton_version"
     compile group: 'abeille', 						name: 'formsrt', 									version: "$formsrt_version"
     compile group: 'forms', 							name: 'forms', 										version: "$forms_version"
     compile group: 'velocity', 						name: 'velocity', 								version: "$velocity_version"
+    compile group: 'slf4j', 						name: 'slf4j', 								version: "$slf4j_version"
     compile group: 'yacron4j', 						name: 'yacron4j', 								version: "$yacron4j_version"
     compile group: 'joda-time', 					name: 'joda-time', 								version: "$joda_time_version"
+    compile group: 'permit-reflect', 				name: 'permit-reflect', 					version: "$permit_version"
 }
 
 println '---------------------------'

@@ -25,7 +25,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,9 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import jnacontrib.jna.Advapi32;
-import jnacontrib.jna.Options;
 
 import org.apache.commons.collections.map.MultiValueMap;
 import org.rzo.yajsw.io.CyclicBufferFileInputStream;
@@ -81,6 +77,9 @@ import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.NativeLongByReference;
 import com.sun.jna.ptr.PointerByReference;
 import com.sun.jna.win32.StdCallLibrary;
+
+import jnacontrib.jna.Advapi32;
+import jnacontrib.jna.Options;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -1431,7 +1430,7 @@ public class WindowsXPProcess extends AbstractProcess
 		}
 	}
 
-	public interface MyAdvapi extends Advapi32
+	public interface MyAdvapi extends jnacontrib.jna.Advapi32
 	{
 		MyAdvapi INSTANCE = (MyAdvapi) Native.loadLibrary("Advapi32",
 				MyAdvapi.class, Options.UNICODE_OPTIONS);
@@ -1823,7 +1822,7 @@ public class WindowsXPProcess extends AbstractProcess
 	volatile Pointer errReadPipe = null;
 
 	volatile int _isElevated = -1; // 1 = true, 0 = false;
-
+	
 	/**
 	 * Gets the process.
 	 * 
@@ -3480,12 +3479,12 @@ public class WindowsXPProcess extends AbstractProcess
 								}
 								else
 								{
-									long envSize = Math.min(Pointer
-											.nativeValue(memInfo.RegionSize),
+									long envBlockSize = Pointer.nativeValue(memInfo.RegionSize);
+									long envSize = Math.min(envBlockSize,
 											32767); // Max Size
 													// http://msdn.microsoft.com/en-us/library/ms682653%28v=vs.85%29.aspx
 
-									Memory mem = new Memory(envSize);
+									Memory mem = new Memory(envBlockSize);
 									readProcessMemory(userParams.Environment,
 											mem);
 
@@ -3711,10 +3710,10 @@ public class WindowsXPProcess extends AbstractProcess
 	 */
 	public int getCurrentCpu()
 	{
-		if (!isRunning() || getCpuCounter() == null)
-			return -1;
 		PdhCounter c = getCpuCounter();
-		return c.getIntValue();
+		if (c != null)
+			return c.getIntValue();
+		return -1;
 	}
 
 	/**
@@ -3789,10 +3788,10 @@ public class WindowsXPProcess extends AbstractProcess
 	 */
 	public int getCurrentPageFaults()
 	{
-		if (!isRunning())
-			return -1;
-		PdhCounter c = getPfCounter();
-		return c.getIntValue();
+		PdhCounter counter = getPfCounter();
+		if (counter != null)
+			return counter.getIntValue();
+		return -1;
 	}
 
 	/**
@@ -3827,6 +3826,10 @@ public class WindowsXPProcess extends AbstractProcess
 	 */
 	public static void main(String[] args) throws InterruptedException
 	{
+		int pid = 5688;
+		 Process p = WindowsXPProcess.getProcess(pid);
+		 System.out.println(p.getCurrentCpu());
+		 System.out.println(p.getCommand());
 		/*
 		 * WindowsXPProcess[] p = new WindowsXPProcess[1]; for (int i = 0; i <
 		 * p.length; i++) { p[i] = new WindowsXPProcess(); //
@@ -3868,6 +3871,7 @@ public class WindowsXPProcess extends AbstractProcess
 		 */
 		// getProcess(3332);
 
+		/*
 		final Process p = new WindowsXPProcess();
 		p.setVisible(false);
 		p.setCommand("ping localhost -t");
@@ -3912,7 +3916,7 @@ public class WindowsXPProcess extends AbstractProcess
 
 		Thread.sleep(4000);
 		p.stop(3000, -1);
-
+*/
 		/*
 		 * System.out.println("start -----------------"); WindowsXPProcess p2 =
 		 * new WindowsXPProcess(); elevating command line java -jar
@@ -4093,10 +4097,10 @@ public class WindowsXPProcess extends AbstractProcess
 
 	public int getCurrentHandles()
 	{
-		if (!isRunning() || getHandlesCounter() == null)
-			return -1;
-		PdhCounter c = getHandlesCounter();
-		return c.getIntValue();
+		PdhCounter counter = getHandlesCounter();
+		if (counter != null)
+			return counter.getIntValue();
+		return -1;
 	}
 
 	private PdhCounter getHandlesCounter()
@@ -4457,6 +4461,13 @@ public class WindowsXPProcess extends AbstractProcess
 		Map<String, String> result = Kernel32Util.getEnvironmentVariables();		
 			return result;
 	}
+
+	@Override
+	public void handleAffinity() {
+		// TODO Auto-generated method stub
+		
+	}
+	
 
 
 }

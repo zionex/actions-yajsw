@@ -4,31 +4,34 @@ task createWrapper(type: Wrapper) {
 }
 
 ext {
-	projectHome = '../..'
+	projectHome = 'Z:/dev/yajsw2021' //'../..'
 	coreLibsDir = new File("$projectHome/lib/core").getAbsolutePath()
+	println "$coreLibsDir"
 	extendedLibsDir = new File("$projectHome/lib/extended").getAbsolutePath()
 // dependency versions
 
-	commons_cli_version 			= '1.4'
+	commons_cli_version 			= '1.5.0'
 	commons_collections_version 	= '3.2.2'
-	commons_configuration_version	= '2.3'
-	commons_text_version			= '1.6'
-	commons_io_version 				= '2.6'
-	commons_lang_version 			= '3.8.1'
-	commons_logging_version 		= '1.1'
-	commons_vfs2_version 			= '2.2'
-	groovy_version 					= '2.5.7'
-	jna_version 					= '5.3.1'
-	platform_version 				= '5.3.1'
-	netty_version 					= 'all-4.1.36.Final'
+	commons_configuration_version	= '2.8.0'
+	commons_text_version			= '1.10.0'
+	commons_io_version 				= '2.11.0'
+	commons_lang_version 			= '3.12.0'
+	commons_logging_version 		= '1.2'
+	commons_vfs2_version 			= '2.9.0'
+	groovy_version 					= '4.0.0'
+	jna_version 					= '5.12.1'
+	platform_version 				= '5.12.1'
+	netty_version 					= '4.1.86.Final'
 	automaton_version 				= '1.11'
 	formsrt_version 				= ''
 	forms_version 					= '1.2.0'
-	velocity_version 				= '1.7'
+	velocity_version 				= 'engine-core-2.3'
+	slf4j_version 					= 'api-1.7.30'
 	glazedlists_version 			= '1.10.0_java16'
 	commons_beanutils_version 		= '1.9.3'
 	yacron4j_version 				= '00.03'
 	joda_time_version 				= '2.7'
+	permit_version					= '0.4'
 }
 defaultTasks 'clean', 'build'
 
@@ -47,7 +50,7 @@ println ">> $coreLibsDir"
 // we use libs from local disk instead of public repository
 repositories {
     flatDir { 
-    dirs "$coreLibsDir/commons", "$coreLibsDir/jna", "$coreLibsDir/netty", 
+    dirs "$coreLibsDir/commons", "$coreLibsDir/jna", "$coreLibsDir/netty", "$coreLibsDir/permit", 
     "$coreLibsDir/yajsw", 
     "$extendedLibsDir/groovy", 
     "$extendedLibsDir/regex", 
@@ -56,6 +59,7 @@ repositories {
     "$extendedLibsDir/abeille",
     "$extendedLibsDir/jgoodies",
     "$extendedLibsDir/glazedlists",
+    "$extendedLibsDir/slf4j",
     "$extendedLibsDir/velocity"
     
     }
@@ -64,8 +68,8 @@ repositories {
 
 
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 //options.bootClasspath = "${System.getProperty('java6.home')}/jre/lib/rt.jar"
 version = ''
 

@@ -15,14 +15,14 @@
  *******************************************************************************/
 package org.rzo.yajsw.wrapper;
 
-import io.netty.util.internal.logging.InternalLogger;
-
 import java.io.OutputStream;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
 import org.apache.commons.configuration2.Configuration;
+
+import io.netty.util.internal.logging.InternalLogger;
 
 
 public interface WrappedProcess
@@ -235,5 +235,7 @@ public interface WrappedProcess
 	public InternalLogger getInternalWrapperLogger();
 
 	public void update(String conf, boolean autostart);
+	
+	public void handleAffinity();
 
 }

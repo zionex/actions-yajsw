@@ -128,8 +128,11 @@ public class Message implements Constants
 		case WRAPPER_MSG_SERVICE_CONTROL_CODE:
 			return "SERVICE_CONTROL_CODE";
 
-		case WRAPPER_MSG_PROPERTIES:
-			return "PROPERTIES";
+		case WRAPPER_MSG_KEYSTORE:
+			return "KEYSTORE";
+
+		case WRAPPER_MSG_KEYSTORE_RESULT:
+			return "KEYSTORE_RESULT";
 
 		case WRAPPER_MSG_OKKEY:
 			return "OKKEY";

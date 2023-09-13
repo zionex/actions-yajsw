@@ -30,6 +30,8 @@ import java.util.jar.Manifest;
 
 import org.rzo.yajsw.app.WrapperJVMMain;
 
+import com.nqzero.permit.Permit;
+
 public class WrapperLoader
 {
 
@@ -78,6 +80,17 @@ public class WrapperLoader
 			return appJar;
 		}
 		return getJarFile(WrapperJVMMain.class);
+	}
+
+	public static String getPermitJar()
+	{
+		String appJar = System.getProperty("wrapper.permitJar", null);
+
+		if ((appJar != null) && new File(appJar).exists())
+		{
+			return appJar;
+		}
+		return getJarFile(Permit.class);
 	}
 
 	private static String getJarFile(Class clazz)
@@ -228,7 +241,7 @@ public class WrapperLoader
 		}
 
 		// add rt.jar
-		if ("App".equals(type))
+		if ("App".equals(type)  && requiredRTjar())
 			try
 			{
 				String rt = getRTJar();
@@ -266,6 +279,17 @@ public class WrapperLoader
 		return urlsArr;
 
 	}
+	
+	public static boolean requiredRTjar()
+	{
+		String jvm = System.getProperty("java.version");
+		if (jvm.startsWith("1."))
+			return true;
+		return false;
+		
+	}
+
+
 
 	public static URLClassLoader getWrapperClassLoader()
 	{
@@ -312,6 +336,15 @@ public class WrapperLoader
 	public static void main(String[] args)
 	{
 		System.out.println(getWrapperAppJar());
+		System.out.println(getWrapperApp9Jar());
 	}
+
+	public static String getWrapperApp9Jar() {
+		// assume that both are in the same folder
+		// we cannot open it here, since it may not be byte code compatible.
+		String appJar = getWrapperAppJar();
+		String result = appJar.substring(0, appJar.length()-4)+"9.jar";
+		return result;
+		}
 
 }

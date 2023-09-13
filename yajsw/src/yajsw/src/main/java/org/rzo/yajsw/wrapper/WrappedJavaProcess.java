@@ -156,8 +156,9 @@ public class WrappedJavaProcess extends AbstractWrappedProcess
 
 	protected String getMainClass()
 	{
+		String module = _config.getString("wrapper.java.app.module", null);
 		return _config.getString("wrapper.java.mainclass",
-				"org.rzo.yajsw.app.WrapperJVMMain");
+				module == null ? "org.rzo.yajsw.app.WrapperJVMMain" : "org.rzo.yajsw.app.WrapperJVMMain9");
 	}
 
 	/**
@@ -240,7 +241,15 @@ public class WrappedJavaProcess extends AbstractWrappedProcess
 		ArrayList result = new ArrayList();
 		result.add("-classpath");
 		StringBuffer sb = new StringBuffer();
+		String module = _config.getString("wrapper.java.app.module", null);
+		if (module != null)
+		{
+			sb.append(WrapperLoader.getWrapperApp9Jar().trim());
+			sb.append(PATHSEP);
+		}
 		sb.append(WrapperLoader.getWrapperAppJar().trim());
+		sb.append(PATHSEP);
+		sb.append(WrapperLoader.getPermitJar());
 		StringBuilder appCp = getAppClassPath(
 				_config.getString("wrapper.working.dir", "."),
 				_config.getKeys("wrapper.java.classpath"));

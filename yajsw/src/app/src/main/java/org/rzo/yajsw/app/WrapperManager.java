@@ -17,6 +17,7 @@
 package org.rzo.yajsw.app;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Properties;
 
 // TODO: Auto-generated Javadoc
@@ -32,6 +33,9 @@ public interface WrapperManager
 	 * @return the main method
 	 */
 	Method getMainMethod();
+	String getMainClassName();
+	String getModule();
+	List<String> getModulePath();
 
 	/**
 	 * Gets the main method args.
@@ -98,4 +102,6 @@ public interface WrapperManager
 	public void setShutdownListener(Runnable listener);
 
 	public void warn(String string);
+	
+	public String keystore(String key) throws InterruptedException;
 }

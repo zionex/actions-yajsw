@@ -15,11 +15,6 @@
  *******************************************************************************/
 package org.rzo.yajsw.wrapper;
 
-import io.netty.util.internal.logging.InternalLogger;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.JdkLogger2Factory;
-import io.netty.util.internal.logging.SimpleLoggerFactory;
-
 import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -32,12 +27,10 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
-import java.net.InetAddress;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -110,10 +103,15 @@ import org.rzo.yajsw.util.MyReentrantLock;
 import org.rzo.yajsw.util.Utils;
 import org.rzo.yajsw.util.VFSUtils;
 
-import sun.security.action.GetPropertyAction;
+//import sun.security.action.GetPropertyAction;
 
 import com.sun.jna.Platform;
 import com.sun.jna.PlatformEx;
+
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.JdkLogger2Factory;
+import io.netty.util.internal.logging.SimpleLoggerFactory;
 
 public abstract class AbstractWrappedProcess implements WrappedProcess,
 		Constants, AbstractWrappedProcessMBean
@@ -239,8 +237,10 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 
 	volatile int _minAppLogLines = MIN_PROCESS_LINES_TO_LOG;
 
-	static final String lineSeparator = ((String) AccessController
-			.doPrivileged(new GetPropertyAction("line.separator")));
+
+	
+	
+	static final String lineSeparator = System.lineSeparator(); //((String) AccessController.doPrivileged(new GetPropertyAction("line.separator")));
 
 	public Configuration getConfiguration()
 	{
@@ -946,11 +946,13 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 			return false;
 		if (_startupExitCodes.contains(_osProcess.getExitCode()))
 		{
+			if (_debug > 0)
 			getWrapperLogger().info("restart process due to exit code rule");
 			return true;
 		}
 		else if (_exitCodeDefaultRestart)
 		{
+			if (_debug > 0)
 			getWrapperLogger().info(
 					"restart process due to default exit code rule");
 			return true;
@@ -965,11 +967,13 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 			return false;
 		if (_startupSignalCodes.contains(_osProcess.getExitSignal()))
 		{
+			if (_debug > 0)
 			getWrapperLogger().info("restart process due to signal code rule");
 			return true;
 		}
 		else if (_signalCodeDefaultRestart)
 		{
+			if (_debug > 0)
 			getWrapperLogger().info(
 					"restart process due to default signal code rule");
 			return true;
@@ -987,6 +991,7 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 	{
 		if (_shutdownExitCodes.contains(_osProcess.getExitCode()))
 		{
+			if (_debug > 0)
 			getWrapperLogger().info("shutdown wrapper due to exit code rule");
 			return true;
 		}
@@ -996,8 +1001,9 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 
 	protected boolean exitSignalShutdown()
 	{
-		if (_shutdownSignalCodes.contains(_osProcess.getExitSignal()))
+		if (_osProcess.getExitSignal() != -1 && _shutdownSignalCodes.contains(_osProcess.getExitSignal()))
 		{
+			if (_debug > 0)
 			getWrapperLogger().info("shutdown wrapper due to exit signal rule");
 			return true;
 		}
@@ -1009,6 +1015,7 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 	{
 		if (_stopExitCodes.contains(_osProcess.getExitCode()))
 		{
+			if (_debug > 0)
 			getWrapperLogger().info("stop process due to exit code rule");
 			return true;
 		}
@@ -1020,6 +1027,7 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 	{
 		if (_stopSignalCodes.contains(_osProcess.getExitSignal()))
 		{
+			if (_debug > 0)
 			getWrapperLogger().info("stop process due to exit signal rule");
 			return true;
 		}
@@ -1318,6 +1326,18 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 				setState(STATE_RUNNING);
 				updateAppLoggerName();
 			}
+			executor.execute(new Runnable() {				
+				@Override
+				public void run() {
+					try {
+						_osProcess.handleAffinity();
+						Thread.sleep(10000);
+						_osProcess.handleAffinity();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			});
 		}
 		else
 		{
@@ -1365,10 +1385,16 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 		String priority = _config.getString("wrapper.priority");
 		if (priority != null)
 			_osProcess.setPriority(getPriority(priority));
+		String nice = _config.getString("wrapper.priority.nice");
+		if (nice != null)
+			_osProcess.setNice(nice);
 
 		String affinity = _config.getString("wrapper.affinity");
 		if (affinity != null)
 			_osProcess.setCpuAffinity(getAffinity(affinity));
+		String affinityBitset = _config.getString("wrapper.affinity.bitset");
+		if (affinityBitset != null)
+			_osProcess.setCpuAffinityBitset(affinityBitset);
 
 		String title = _config.getString("wrapper.console.title");
 		if (title != null)
@@ -1623,6 +1649,7 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 			boolean desc = _config.getBoolean("wrapper.logfile.desc", false);
 			int umask = Utils.parseOctal(_config.getString(
 					"wrapper.logfile.umask", null));
+			System.out.println("wrapper.logfile.umask "+umask);
 			String encoding = _config.getString("wrapper.log.encoding");
 			boolean compress = _config.getBoolean("wrapper.logfile.compress", false);
 			int maxDays = _config.getInt("wrapper.logfile.maxdays", -1);
@@ -2464,7 +2491,7 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 		if (_restartCount < _config.getInt("wrapper.max_failed_invocations",
 				DEFAULT_MAX_FAILED_INVOCATIONS))
 			return true;
-		getWrapperLogger().info("too many restarts ");
+		getWrapperLogger().info("too many restarts: "+_restartCount);
 		return false;
 	}
 
@@ -3390,7 +3417,7 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 				// ioe.getMessage());
 				if (_debug > 2)
 					_goblerLog.log(Level.INFO, " gobler terminated " + _name
-							+ " " + ioe);
+							+ " ", ioe);
 			}
 			if (AbstractWrappedProcess.this._osProcess != null
 					&& _pid == AbstractWrappedProcess.this._osProcess.getPid()
@@ -3995,6 +4022,11 @@ public abstract class AbstractWrappedProcess implements WrappedProcess,
 				"spawing update process for configuration "
 						+ internUpdateConfFile);
 		UpdateAction.run();
+	}
+	
+	public void handleAffinity()
+	{
+		_osProcess.handleAffinity();
 	}
 
 }

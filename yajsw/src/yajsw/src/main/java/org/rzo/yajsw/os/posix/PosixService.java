@@ -48,6 +48,8 @@ public class PosixService extends AbstractService implements Constants
 	String _pidDir;
 	String _confFile;
 	int _stopTimeout;
+	boolean _useSystemd;
+
 
 	String[] _startCmd;
 	String[] _execCmd;
@@ -72,6 +74,8 @@ public class PosixService extends AbstractService implements Constants
 			_logger.warning("no name for daemon -> abort");
 			return;
 		}
+		_useSystemd = isUseSystemd();
+
 		_daemonDir = _config.getString("wrapper.daemon.dir",
 				getDefaultDaemonDir());
 		File daemonDir = new File(_daemonDir);
@@ -228,8 +232,9 @@ public class PosixService extends AbstractService implements Constants
 
 		}
 
+		String defaultTemplate = _useSystemd ? "/templates/systemd.vm" : "/templates/daemon.vm";
 		_daemonTemplate = _config.getString("wrapper.daemon.template",
-				wrapperHome + "/templates/daemon.vm");
+				wrapperHome + defaultTemplate);
 		File daemonTemplate = new File(_daemonTemplate);
 		if (!daemonTemplate.exists() || !daemonTemplate.isFile())
 		{
@@ -377,12 +382,17 @@ public class PosixService extends AbstractService implements Constants
 
 	protected String getDefaultDaemonDir()
 	{
-		return Constants.DEFAULT_DAEMON_DIR;
+		if (_useSystemd)
+			return Constants.DEFAULT_SYSTEMD_DIR;
+		else 
+			return Constants.DEFAULT_DAEMON_DIR;
 	}
 
 	protected File getDaemonScript()
 	{
-		return new File(new File(_daemonDir), getName());
+		String fileName = getName();
+		if (_useSystemd) fileName += ".service";
+		return new File(new File(_daemonDir), fileName);
 	}
 
 	public boolean install()
@@ -396,7 +406,7 @@ public class PosixService extends AbstractService implements Constants
 		try
 		{
 			File daemonTemplate = new File(_daemonTemplate);
-			VelocityEngine ve = new VelocityEngine();
+			VelocityEngine  ve = new VelocityEngine();
 			ve.setProperty(VelocityEngine.RESOURCE_LOADER, "file");
 			ve.setProperty("file.resource.loader.path",
 					daemonTemplate.getParent());
@@ -429,7 +439,7 @@ public class PosixService extends AbstractService implements Constants
 			context.put("w_stop_levels", _updateRcParser.getStopLevels());
 			context.put("w_start_priority", _config.getString("chkconfig_start_priority", ""));
 			context.put("w_stop_priority", _config.getString("chkconfig_stop_priority", ""));
-			context.put("start_dependencies", getStartDependencies());
+			context.put("start_dependencies", getStartDependencies(_useSystemd));
 			context.put("stop_dependencies", getInternalStopDependencies());
 			FileWriter writer = new FileWriter(_daemonScript);
 
@@ -449,12 +459,19 @@ public class PosixService extends AbstractService implements Constants
 							+ _daemonScript);
 			}
 			// only jdk 1.6 daemonScript.setExecutable(true);
+
 			Runtime.getRuntime().exec("chmod 755 " + _daemonScript);
+
 			if ("AUTO_START".equals(_config.getString(
 					"wrapper.ntservice.starttype", DEFAULT_SERVICE_START_TYPE))
 					|| "DELAYED_AUTO_START".equals(_config.getString(
 							"wrapper.ntservice.starttype",
 							DEFAULT_SERVICE_START_TYPE)))
+				if (_useSystemd)
+				{
+						_utils.osCommand("systemctl enable "+_daemonScript, 10000);
+				}
+				else
 			{
 
 				for (String link : _ksLinks)
@@ -497,6 +514,28 @@ public class PosixService extends AbstractService implements Constants
 		return true;
 	}
 
+	private boolean isUseSystemd() {
+		String required = _config.getString("wrapper.daemon.system");
+		if (required == null)
+		{
+			return systemDInstalled();
+		}
+		else
+			return "systemd".equals(required);
+	}
+
+	private boolean systemDInstalled() {
+		String cmd = "ps --no-headers -o comm 1";
+		String process1 = _utils.osCommand(cmd, 2000);
+		if (process1 == null)
+		{
+			if (_logger != null)
+			_logger.warning("Warning error executing\""+cmd+"\"");
+			return false;
+		}
+		return process1.contains("systemd");
+	}
+
 	private String getInternalStopDependencies()
 	{
 		String result = "";
@@ -507,13 +546,18 @@ public class PosixService extends AbstractService implements Constants
 		return result;
 	}
 
-	private String getStartDependencies()
+	private String getStartDependencies(boolean systemd)
 	{
 		String result = "";
 		String[] dependencies = super.getDependencies();
 		if (dependencies != null)
 			for (String dep : dependencies)
+			{
+				if (!dep.contains("."))
+					dep = dep+".service";
 				result = result + dep + " ";
+				
+			}
 		return result;
 	}
 
@@ -573,17 +617,35 @@ public class PosixService extends AbstractService implements Constants
 						.println("could not set working dir. pls check configuration or user rights :"
 								+ f.getParent());
 		}
-		String txt = _utils.osCommand(_daemonScript + " start", 45000);
-		if (_logger != null)
-			_logger.info(txt);
+		if (_useSystemd)
+		{
+			String txt = _utils.osCommand("systemctl start "+getName(), 45000);
+			if (_logger != null)
+				_logger.info(txt);
+		}
+		else
+		{
+			String txt = _utils.osCommand(_daemonScript + " start", 45000);
+			if (_logger != null)
+				_logger.info(txt);
+		}
 		return isRunning();
 	}
 
 	public boolean stop()
 	{
-		if (_logger != null)
-			_logger.info(_utils
-					.osCommand(_daemonScript + " stop", _stopTimeout));
+		if (_useSystemd)
+		{
+			String txt = _utils.osCommand("systemctl stop "+getName(), _stopTimeout);
+			if (_logger != null)
+				_logger.info(txt);
+		}
+		else
+		{
+			String txt = _utils.osCommand(_daemonScript + " stop", _stopTimeout);
+			if (_logger != null)
+				_logger.info(txt);
+		}
 		return !isRunning();
 	}
 
@@ -650,7 +712,10 @@ public class PosixService extends AbstractService implements Constants
 	{
 		if (isRunning())
 			stop();
+		if (_useSystemd)
+			_utils.osCommand("systemctl disable "+_daemonScript, 10000);
 		new File(_daemonScript).delete();
+		if (!_useSystemd)
 		for (String link : _ksLinks)
 			new File(link).delete();
 		return true;

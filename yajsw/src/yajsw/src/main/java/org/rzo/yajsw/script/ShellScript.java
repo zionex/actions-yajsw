@@ -16,8 +16,15 @@
 
 package org.rzo.yajsw.script;
 
-import org.rzo.yajsw.os.OperatingSystem;
-import org.rzo.yajsw.os.Process;
+import java.io.InputStream;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.rzo.yajsw.util.DaemonThreadFactory;
 import org.rzo.yajsw.wrapper.WrappedProcess;
 
 // TODO: Auto-generated Javadoc
@@ -26,7 +33,10 @@ import org.rzo.yajsw.wrapper.WrappedProcess;
  */
 public class ShellScript extends AbstractScript
 {
-	volatile Process p = null;
+	String[] _cmd;
+	AtomicReference<Process> p = new AtomicReference();
+	protected static final Executor executor = Executors
+			.newCachedThreadPool(new DaemonThreadFactory("yajsw.shellscript"));
 
 	/**
 	 * Instantiates a new shell script.
@@ -38,8 +48,12 @@ public class ShellScript extends AbstractScript
 	public ShellScript(String script, String id, WrappedProcess process,
 			String[] args, int timeout, int maxConcInvocations)
 	{
-		super("scripts/" + script, id, process, args, timeout,
+		super(script, id, process, args, timeout,
 				maxConcInvocations);
+		if (script.endsWith(".sh"))
+			_cmd = new String[]{"/bin/sh"};
+		if (script.endsWith("bat"))
+			_cmd = new String[]{"cmd", "/c"};
 	}
 
 	/*
@@ -50,27 +64,31 @@ _pro	 *
 	 */
 	public Object execute(String line)
 	{
+		//log("shellscript execute "+getScript());
 		String id = _id;
 		String state = _process != null ? _process.getStringState() : "?";
 		String count = _process != null ? "" + _process.getRestartCount() : "?";
 		String pid = _process != null ? "" + _process.getAppPid() : "?";
 		String exitCode = _process != null ? "" + _process.getExitCode() : "?";
+		String[] cmd = _cmd == null ? new String[7] : new String[_cmd.length+7];
+		int i=0;
+		if (_cmd != null)
+		for (i=0; i<_cmd.length; i++)
+			cmd[i] = _cmd[i];
+		cmd[i] = getScript();
+		cmd[i+1] = id;
+		cmd[i+2] = state;
+		cmd[i+3] = count;
+		cmd[i+4] = pid;
+		cmd[i+5] = exitCode;
+		cmd[i+6] = line == null ? "?" : line;
+		String ccmd = "";
+		for (String x:cmd)
+			ccmd += x+" ";
 		try
 		{
-			p = OperatingSystem.instance().processManagerInstance()
-					.createProcess();
-			p.setCommand(getScript() + " " + id + " " + state + " " + count
-					+ " " + pid + " " + exitCode);
-			p.setPipeStreams(false, false);
-			p.start();
-			p.waitFor(getTimeout());
-			if (p.isRunning())
-				p.kill(999);
-			if (p.getExitCode() != 0)
-				System.out.println("script " + getScript() + "returned "
-						+ p.getExitCode());
-			p.destroy();
-			p = null;
+			String result = osCommand(cmd, _timeout);
+			return result;
 		}
 		catch (Exception ex)
 		{
@@ -79,24 +97,14 @@ _pro	 *
 		return null;
 	}
 
-	public Object execute()
-	{
-		return execute("");
-	}
-
-	public void executeWithTimeout()
-	{
-		// TODO Auto-generated method stub
-
-	}
-
 	@Override
 	public void interrupt()
 	{
-		if (p != null)
-		{
-			p.destroy();
-		}
+		if (p.get() != null)
+			p.get().destroy();
+		p.set(null);
+		if (_future != null)
+			_future.cancel(true);
 	}
 
 	void log(String msg)
@@ -106,5 +114,53 @@ _pro	 *
 		else
 			System.out.println(msg);
 	}
+	
+	void log (Exception e)
+	{
+		if (_process != null && _process.getInternalWrapperLogger() != null)
+			_process.getInternalWrapperLogger().warn(e);
+		else
+			e.printStackTrace();
+		
+	}
+	
+	public String osCommand(String[] cmd, long timeout)
+	{
+		try
+		{
+			p.set(Runtime.getRuntime().exec(cmd));
+			FutureTask<String> future = new FutureTask(new Callable()
+			{
+
+				public String call() throws Exception
+				{
+					StringBuffer result = new StringBuffer();
+					InputStream in = p.get().getInputStream();
+					InputStream err = p.get().getErrorStream();
+					int x;
+					int y;
+					while ((x = in.read()) != -1)
+						result.append((char) x);
+					while ((y = err.read()) != -1)
+						result.append((char) y);
+
+					return result.toString();
+				}
+			});
+			executor.execute(future);
+			String result = future.get(timeout, TimeUnit.MILLISECONDS);
+			return result;
+
+		}
+		catch (Exception e)
+		{
+			log("Error executing \"" + getScript() + "\": " + e);
+			log(e);
+			interrupt();
+		}
+		return null;
+	}
+
+
 
 }

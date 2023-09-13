@@ -169,7 +169,8 @@ public class Pdh
 		 * 
 		 * @return the int
 		 */
-		int PdhAdd009CounterA(Pointer hQuery, String szFullCounterPath,
+//		int PdhAdd009CounterA(Pointer hQuery, String szFullCounterPath,
+		int PdhAddEnglishCounterA(Pointer hQuery, String szFullCounterPath,
 				int dwUserData, PointerByReference phCounter);
 
 		/** The ERRO r_ success. */
@@ -659,7 +660,7 @@ public class Pdh
 						+ Integer.toHexString(ret));
 
 			if (english)
-				ret = Pdhdll.INSTANCE.PdhAdd009CounterA(_hQuery.getValue(),
+				ret = Pdhdll.INSTANCE.PdhAddEnglishCounterA(_hQuery.getValue(),
 						counter, 0, _hCounter);
 			else
 				ret = Pdhdll.INSTANCE.PdhAddCounterA(_hQuery.getValue(),

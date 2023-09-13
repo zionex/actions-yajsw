@@ -16,11 +16,6 @@
 
 package org.rzo.yajsw.script;
 
-import groovy.lang.Binding;
-import groovy.lang.GroovyClassLoader;
-import groovy.lang.GroovyObject;
-import io.netty.util.internal.logging.InternalLogger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -39,6 +34,11 @@ import org.rzo.yajsw.boot.WrapperLoader;
 import org.rzo.yajsw.util.VFSUtils;
 import org.rzo.yajsw.wrapper.WrappedJavaProcess;
 import org.rzo.yajsw.wrapper.WrappedProcess;
+
+import groovy.lang.Binding;
+import groovy.lang.GroovyClassLoader;
+import groovy.lang.GroovyObject;
+import io.netty.util.internal.logging.InternalLogger;
 
 /**
  * The Class GroovyScript.
@@ -165,7 +165,7 @@ public class GroovyScript extends AbstractScript
 	 * java.lang.String, java.lang.String, java.lang.String, java.lang.String,
 	 * java.lang.String, java.lang.Object)
 	 */
-	synchronized public Object execute(String line)
+	public Object execute(String line)
 	{
 		Object result = null;
 
@@ -206,7 +206,10 @@ public class GroovyScript extends AbstractScript
 		}
 		try
 		{
-			result = _script.invokeMethod("run", new Object[] {});
+			synchronized (_script) 
+			{
+				result = _script.invokeMethod("run", new Object[] {});
+			}
 		}
 		catch (Throwable e)
 		{

@@ -26,10 +26,12 @@ import org.rzo.yajsw.io.CyclicBufferFilePrintStream;
 import org.rzo.yajsw.os.OperatingSystem;
 import org.rzo.yajsw.os.Process;
 import org.rzo.yajsw.os.posix.PosixProcess;
+import org.rzo.yajsw.os.posix.PosixProcess.CLibrary;
 
+import com.sun.jna.Memory;
 import com.sun.jna.Native;
-import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
+import com.sun.jna.ptr.PointerByReference;
 
 public class MacOsXProcess extends PosixProcess
 {
@@ -296,14 +298,7 @@ public class MacOsXProcess extends PosixProcess
 
 			}
 
-			if (_cpuAffinity != AFFINITY_UNDEFINED)
-			{
-				LongByReference affinity = new LongByReference();
-				affinity.setValue(_cpuAffinity);
-				if (CLibrary.INSTANCE.sched_setaffinity(_pid, 4, affinity) == -1)
-					log("error setting affinity");
-			}
-
+			handleAffinity();
 			executor.execute(new Runnable()
 			{
 
@@ -319,7 +314,7 @@ public class MacOsXProcess extends PosixProcess
 
 			});
 
-			log("started process " + _pid);
+			//log("started process " + _pid);
 			return true;
 		} // parent process
 		else if (pid < 0)
