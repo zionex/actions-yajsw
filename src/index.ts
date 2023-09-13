@@ -9,15 +9,17 @@ type FileReplaceInfo = {[key: string]: {[key: string]: string}};
 
 (async (): Promise<void> => {
   try {
-    const workingDir: string = process.cwd();
-
     const repoInfo: string[] = process.env.GITHUB_REPOSITORY!.split('/');
     const owner: string = repoInfo[0];
     const repo: string = repoInfo[1];
 
-    let srcPath: string = path.join(workingDir, 'yajsw');
+    const workingDir: string = process.cwd();
+    const srcPath: string = path.join(workingDir, 'yajsw');
 
     const yajswUrl: string = `https://github.com/${owner}/${repo}/releases/download/v1/yajsw.zip`;
+
+    console.log(`Downloading yajsw... (URL: ${yajswUrl})`);
+
     const yajswFile: string = await tc.downloadTool(yajswUrl);
     const yajswDir: string = await tc.extractZip(
         yajswFile,
