@@ -1,7 +1,10 @@
-yajsw-stable-13.08
+yajsw-stable-13.09
 
-    * Bug: cli wrapper properties ignored when installing a service
-    * Change: remove logging	
+    * Bug: Error installing daemon on mac:  UnsatisfiedLinkError: Error looking up function 'sched_getaffinity'
+    * Bug: Documentation jna_tmpdir
+    * Bug: Bad yajsw version log
+    * Bug: Windows: NPE getting PDH counters for system tray. TODO resolve PDH counter issues.
+	
 	
 Note: support the project by donating:
 
