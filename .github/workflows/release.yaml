@@ -6,6 +6,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      yajsw-version: '13.10'
 
     steps:
       - name: Checkout
@@ -13,7 +15,8 @@ jobs:
       - name: Make assets file
         run: |
           cd yajsw
-          zip -r ../yajsw.zip *
+          find . -type f \( -name '*.sh' -o -name '*.xml' -o -name '*.txt' -o -name '*.conf' -o -name '*.conf.default' -o -name '*.vm' -o -name '*.gv' \) -exec perl -pi -e 's/\r//g' {} \;
+          zip -r ../yajsw-stable-${{ env.yajsw-version }}.zip *
       - name: Get release info
         run: |
           echo "tag-name=v$(cat package.json | jq '.version | sub(".0"; "") | sub(".0"; "") | tonumber')" >> $GITHUB_OUTPUT
@@ -34,6 +37,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: yajsw.zip
-          asset_name: yajsw.zip
+          asset_path: yajsw-stable-${{ env.yajsw-version }}.zip
+          asset_name: yajsw-stable-${{ env.yajsw-version }}.zip
           asset_content_type: application/zip

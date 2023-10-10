@@ -9370,14 +9370,28 @@ const core = __importStar(__nccwpck_require__(4322));
 const tc = __importStar(__nccwpck_require__(9968));
 (() => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const latestVersion = '13.10';
+        let yajswFileName = `yajsw-stable-${latestVersion}`;
+        let yajswUrl = `https://github.com/meta205/actions-yajsw/releases/download/v1/${yajswFileName}.zip`;
         const workingDir = process.cwd();
-        const srcPath = path.join(workingDir, 'yajsw');
-        const yajswUrl = 'https://github.com/zionex/actions-yajsw/releases/download/v2.2/yajsw.zip';
+        let srcPath = path.join(workingDir, yajswFileName);
+        const yajswVersion = core.getInput('yajsw-version');
+        if (yajswVersion && yajswFileName !== `yajsw-stable-${yajswVersion}`) {
+            yajswFileName = `yajsw-stable-${yajswVersion}`;
+            yajswUrl = `https://sourceforge.net/projects/yajsw/files/yajsw/${yajswFileName}/${yajswFileName}.zip`;
+            srcPath = path.join(workingDir, yajswFileName);
+        }
         console.log('Downloading yajsw...');
         console.log(`    URL: ${yajswUrl}`);
         const yajswFile = yield tc.downloadTool(yajswUrl);
-        const yajswDir = yield tc.extractZip(yajswFile, srcPath);
-        console.log(`The download path of yajsw: ${yajswDir}`);
+        yield tc.extractZip(yajswFile, srcPath);
+        if (!yajswFileName.endsWith(latestVersion)) {
+            srcPath = path.join(srcPath, yajswFileName);
+        }
+        console.log(`The download path of yajsw: ${srcPath}`);
+        fs_extra_1.default.readdirSync(srcPath).forEach(file => {
+            console.log(`>> ${file}`);
+        });
         let distPath = core.getInput('dist-path');
         if (!distPath) {
             distPath = path.join(workingDir, 'release/yajsw');
@@ -9391,8 +9405,11 @@ const tc = __importStar(__nccwpck_require__(9968));
         fs_extra_1.default.copySync(path.join(srcPath, 'templates'), path.join(distPath, 'wrapper', 'templates'), { overwrite: true });
         fs_extra_1.default.copySync(path.join(srcPath, 'wrapper.jar'), path.join(distPath, 'wrapper', 'wrapper.jar'), { overwrite: true });
         fs_extra_1.default.copySync(path.join(srcPath, 'wrapperApp.jar'), path.join(distPath, 'wrapper', 'wrapperApp.jar'), { overwrite: true });
-        fs_extra_1.default.copySync(path.join(srcPath, 'wrapperApp9.jar'), path.join(distPath, 'wrapper', 'wrapperApp9.jar'), { overwrite: true });
         fs_extra_1.default.copySync(path.join(srcPath, 'yajsw.policy.txt'), path.join(distPath, 'wrapper', 'yajsw.policy.txt'), { overwrite: true });
+        const srcPathWrapperApp9 = path.join(srcPath, 'wrapperApp9.jar');
+        if (fs_extra_1.default.existsSync(srcPathWrapperApp9)) {
+            fs_extra_1.default.copySync(srcPathWrapperApp9, path.join(distPath, 'wrapper', 'wrapperApp9.jar'), { overwrite: true });
+        }
         console.log('Change the file name...');
         const renameFileDict = {
             'installService.bat': 'install-service.bat',

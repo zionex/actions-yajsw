@@ -6,6 +6,9 @@ branding:
   color: 'blue'
 
 inputs:
+  yajsw-version:
+    description: 'The version of yajsw'
+    required: false
   dist-path:
     description: 'The distribution path of yajsw'
     required: false
