@@ -17,7 +17,7 @@
   "author": "Kyongho Lee",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/meta205/actions-yajsw/issues"
+    "url": "https://github.com/zionex/actions-yajsw/issues"
   },
   "dependencies": {
     "@actions/core": "^1.10.0",
