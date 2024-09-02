@@ -12,7 +12,7 @@ type FileReplaceInfo = {[key: string]: {[key: string]: string}};
     const latestVersion: string = '13.10';
 
     let yajswFileName: string = `yajsw-stable-${latestVersion}`;
-    let yajswUrl: string = `https://github.com/meta205/actions-yajsw/releases/download/v1/${yajswFileName}.zip`;
+    let yajswUrl: string = `https://github.com/zionex/actions-yajsw/releases/download/v1/${yajswFileName}.zip`;
 
     const workingDir: string = process.cwd();
     let srcPath: string = path.join(workingDir, yajswFileName);
